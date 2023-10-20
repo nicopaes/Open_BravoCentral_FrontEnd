@@ -17,6 +17,7 @@ using ChartJs.Blazor.Common.Axes;
 using System.Drawing;
 using BravoCentral.Pages.WHO5;
 using System.Text;
+using System.Globalization;
 
 namespace BravoCentral.Data
 {
@@ -37,14 +38,12 @@ namespace BravoCentral.Data
         public List<Week> listWeeks = new List<Week>();
         public List<String> listQuestionText = new List<String>();
         public List<String> listProductivityQuestionText = new List<String>();
-        public List<Ritual> rituals = new List<Ritual>();
 
         public Action changedUser;
         public Action initalizedAction;
         public string currentRunningDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
-        // public string serveruri = "http://localhost:8080";
-        public string serveruri = " https://bravo-central.herokuapp.com";
+        public string serveruri = "http://localhost:8080";
         private static string applicationFolder = @"%AppData%\BravoCentral";
         private static string settingsFilePath = @"%AppData%\BravoCentral\Settings.json";
 
@@ -52,9 +51,9 @@ namespace BravoCentral.Data
         {
             Utils.Log("Db mirror init");
             main = new DbMirror();
-            main.commits = new List<Commit>()
-            
-            ;
+            main.commits = new List<Commit>();
+
+            // main.CreateWeeksFile(2022);
             Utils.Log(Environment.ExpandEnvironmentVariables(applicationFolder));
             if (!Directory.Exists(Environment.ExpandEnvironmentVariables(applicationFolder)))
             {
@@ -93,7 +92,6 @@ namespace BravoCentral.Data
             await main.GetWhoQuestionsFromDB();
             await main.GetProductivityQuestionsFromDB();
             await main.GetCommitsFromDB();
-            await main.GetRitualsFromDB();
 
             main.Initialized = true;
             main.initalizedAction.Invoke();
@@ -228,33 +226,6 @@ namespace BravoCentral.Data
             }
         }
 
-        public async Task GetRitualsFromDB()
-        {
-            var http = new HttpClient();
-            try
-            {
-                HttpResponseMessage res = await http.GetAsync($"{serveruri}/social/rituals");
-                string jsonRes = await res.Content.ReadAsStringAsync();
-                Utils.Log("social/rituals");
-
-                var settings = new JsonSerializerSettings
-                {
-                    DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                    DateFormatHandling = DateFormatHandling.IsoDateFormat
-                };
-                List<Ritual> tempList = JsonConvert.DeserializeObject<List<Ritual>>(jsonRes, settings);
-                if (rituals.Count < tempList.Count)
-                {
-                    rituals = tempList.OrderBy(commit => commit.date).ToList();
-                }
-            }
-            catch (HttpRequestException e)
-            {
-                Utils.Log("\nException Caught!");
-                Utils.Log($"Message :{e.Message} ");
-            }
-        }
-
         public int CountCommitsWeek(int week)
         {
             int sum = 0;
@@ -298,7 +269,7 @@ namespace BravoCentral.Data
                 if (commit.CommiterEmail == user.email)
                 {
                     if (commit.ContainsCodeChanges)
-                    {                        
+                    {
                         if (commit.CommitedDate.IsBetween(choosenWeek.dayStart, choosenWeek.dayEnd))
                         {
                             sum += commit.CodeStats.Total;
@@ -320,7 +291,7 @@ namespace BravoCentral.Data
                 if (commit.CommiterEmail == user.email)
                 {
                     if (commit.ContainsCodeChanges)
-                    {                        
+                    {
                         if (commit.CommitedDate.IsBetween(choosenWeek.dayStart, choosenWeek.dayEnd))
                         {
                             sum += commit.CodeStats.Additions;
@@ -342,7 +313,7 @@ namespace BravoCentral.Data
                 if (commit.CommiterEmail == user.email)
                 {
                     if (commit.ContainsCodeChanges)
-                    {                        
+                    {
                         if (commit.CommitedDate.IsBetween(choosenWeek.dayStart, choosenWeek.dayEnd))
                         {
                             sum += commit.CodeStats.Deletions;
@@ -396,7 +367,6 @@ namespace BravoCentral.Data
             await main.GetWhoQuestionsFromDB();
             await main.GetProductivityQuestionsFromDB();
             await main.GetCommitsFromDB();
-            await main.GetRitualsFromDB();
         }
 
         public BarDataset<int> CreateCommitDeletionsPerWeekPerUser(User user)
@@ -461,5 +431,38 @@ namespace BravoCentral.Data
         }
 
         public string GetNameByEmail(string email) => users.FirstOrDefault(x => x.email == email).displayName;
+
+        public void CreateWeeksFile(int year)
+        {
+            DateTime startDate = GetFirstMondayOfYear(year);
+
+            List<Week> weeks = new List<Week>();
+            DateTime endDate = startDate.AddDays(6); // Get the first week's end date
+
+            int weekNumber = 1;
+            while (startDate.Year == year)
+            {
+                Week newWeek = new Week($"Week {weekNumber} {startDate.ToString("MMMM", CultureInfo.InvariantCulture)}", startDate, endDate);
+                weeks.Add(newWeek);
+
+                startDate = endDate.AddDays(1);
+                endDate = startDate.AddDays(6);
+                weekNumber++;
+            }
+
+            string json = JsonConvert.SerializeObject(weeks, Formatting.Indented);
+
+            File.WriteAllText("C:\\Users\\NICOLAS\\AppData\\Roaming\\BravoCentral\\weeks.json", json);
+        }
+
+        static DateTime GetFirstMondayOfYear(int year)
+        {
+            DateTime date = new DateTime(year, 1, 1);
+
+            int daysUntilMonday = DayOfWeek.Monday - date.DayOfWeek;
+            if (daysUntilMonday < 0)
+                daysUntilMonday += 7; // Move to the next Monday
+            return date.AddDays(daysUntilMonday);
+        }
     }
 }

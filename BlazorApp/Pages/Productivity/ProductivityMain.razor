@@ -11,7 +11,7 @@
 @using System.Drawing
 @inject NavigationManager NavigationManager
 
-@for (int i = 0; i < 3; i++)
+@for (int i = 0; i < DbMirror.main.listWeeks.Count; i++)
 {
     <div class="row">
         @for (int j = 0; j < maxPerLine; j++)

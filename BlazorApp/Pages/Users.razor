@@ -10,12 +10,11 @@
         </RadzenCard>
     }
 //TODO Rows
-    @for (int i = 0; i < 2; i++)
+    @for (int i = 0; i < DbMirror.main.users.Count; i++)
     {
         <div class="row m-3">
-            @for (int j = 0; j < 3; j++)
-            {
-                User user = DbMirror.main.users[3 * i + j];
+            @{   
+                User user = DbMirror.main.users[i];
                 <RadzenCard Class="m-1" style="width: 20rem;">
                     <div class="text-center">
                         <RadzenText TextStyle="TextStyle.DisplayH4" class="m-0">@user.displayName</RadzenText>

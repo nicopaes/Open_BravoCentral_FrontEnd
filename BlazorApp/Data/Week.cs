@@ -13,7 +13,19 @@ public class Week
     {
         get
         {
-            return name.Replace("Week", "Semana").Replace("September", "Setembro").Replace("October", "Outubro").Replace("November", "Novembro");
+            return name.Replace("Week", "Semana")
+            .Replace("January", "Janeiro")
+            .Replace("February", "Fevereiro")
+            .Replace("March", "Março")
+            .Replace("April", "Abril")
+            .Replace("May", "Maio")
+            .Replace("June", "Junho")
+            .Replace("July", "Julho")
+            .Replace("August", "Agosto")
+            .Replace("September", "Setembro")
+            .Replace("October", "Outubro")
+            .Replace("November", "Novembro")
+            .Replace("December", "Dezembro");
         }
     }
 

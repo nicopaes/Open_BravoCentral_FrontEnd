@@ -82,10 +82,12 @@
             _lineConfig2.Data.Datasets.Add(CreateWho5FinalPercentPerUser(user));
             _lineConfig2.Data.Datasets.Add(ProductivityChart.CreatePeceptionDashedPerWeek(user));
         }
-
-        _config.Data.Datasets.Add(CreateAveragePerWeek());
-        _config.Data.Datasets.Add(CreateMedian());
-        _config.Data.Datasets.Add(CreateAverage());
+        if(DbMirror.main.whoquestions.Count > 0)
+        {
+            _config.Data.Datasets.Add(CreateAveragePerWeek());
+            _config.Data.Datasets.Add(CreateMedian());
+            _config.Data.Datasets.Add(CreateAverage());
+        }        
 
         if (_chart != null)
         {
