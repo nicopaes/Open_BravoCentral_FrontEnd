@@ -53,7 +53,6 @@ namespace BravoCentral.Data
             main = new DbMirror();
             main.commits = new List<Commit>();
 
-            // main.CreateWeeksFile(2022);
             Utils.Log(Environment.ExpandEnvironmentVariables(applicationFolder));
             if (!Directory.Exists(Environment.ExpandEnvironmentVariables(applicationFolder)))
             {
@@ -124,18 +123,25 @@ namespace BravoCentral.Data
             try
             {
                 HttpResponseMessage res = await http.GetAsync($"{serveruri}/db/who5/all");
-                string jsonRes = await res.Content.ReadAsStringAsync();
-                Utils.Log("/db/who5/all");
-                if (DbMirror.main == null)
+                if (res.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    Utils.Log("main null");
+                    string jsonRes = await res.Content.ReadAsStringAsync();
+                    Utils.Log("/db/who5/all");
+                    if (DbMirror.main == null)
+                    {
+                        Utils.Log("main null");
+                    }
+                    if (DbMirror.main.whoquestions == null)
+                    {
+                        Utils.Log("main null");
+                    }
+                    DbMirror.main.whoquestions = JsonConvert.DeserializeObject<List<WhoQuestions>>(jsonRes);
+                    DbMirror.main.whoquestions = DbMirror.main.whoquestions.OrderBy(question => question.week.dayStart).ToList();
                 }
-                if (DbMirror.main.whoquestions == null)
+                else
                 {
-                    Utils.Log("main null");
+                    DbMirror.main.whoquestions = new();
                 }
-                DbMirror.main.whoquestions = JsonConvert.DeserializeObject<List<WhoQuestions>>(jsonRes);
-                DbMirror.main.whoquestions = DbMirror.main.whoquestions.OrderBy(question => question.week.dayStart).ToList();
             }
             catch (HttpRequestException e)
             {
@@ -150,20 +156,27 @@ namespace BravoCentral.Data
             try
             {
                 HttpResponseMessage res = await http.GetAsync($"{serveruri}/db/productivity/all");
-                string jsonRes = await res.Content.ReadAsStringAsync();
-                Utils.Log("/db/productivity/all");
-                if (DbMirror.main == null)
+                if (res.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    Utils.Log("main null");
+                    string jsonRes = await res.Content.ReadAsStringAsync();
+                    Utils.Log("/db/productivity/all");
+                    if (DbMirror.main == null)
+                    {
+                        Utils.Log("main null");
+                    }
+                    if (DbMirror.main.pquestions == null)
+                    {
+                        Utils.Log("main null");
+                    }
+                    List<ProductivityQuestions> tempList = JsonConvert.DeserializeObject<List<ProductivityQuestions>>(jsonRes);
+                    if (DbMirror.main.pquestions.Count < tempList.Count)
+                    {
+                        DbMirror.main.pquestions = tempList.OrderBy(question => question.week.dayStart).ToList();
+                    }
                 }
-                if (DbMirror.main.pquestions == null)
+                else
                 {
-                    Utils.Log("main null");
-                }
-                List<ProductivityQuestions> tempList = JsonConvert.DeserializeObject<List<ProductivityQuestions>>(jsonRes);
-                if (DbMirror.main.pquestions.Count < tempList.Count)
-                {
-                    DbMirror.main.pquestions = tempList.OrderBy(question => question.week.dayStart).ToList();
+                    DbMirror.main.pquestions = new();
                 }
             }
             catch (HttpRequestException e)
@@ -205,18 +218,26 @@ namespace BravoCentral.Data
             try
             {
                 HttpResponseMessage res = await http.GetAsync($"{serveruri}/db/commits/all");
-                string jsonRes = await res.Content.ReadAsStringAsync();
-                Utils.Log("db/commits/all");
-                var settings = new JsonSerializerSettings
+                if (res.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    DateTimeZoneHandling = DateTimeZoneHandling.Utc,
-                    DateFormatHandling = DateFormatHandling.IsoDateFormat
-                };
-                List<Commit> tempList = JsonConvert.DeserializeObject<List<Commit>>(jsonRes, settings);
-                if (commits.Count < tempList.Count)
-                {
-                    commits = tempList.OrderBy(commit => commit.CommitedDate).ToList();
+                    string jsonRes = await res.Content.ReadAsStringAsync();
+                    Utils.Log("db/commits/all");
+                    var settings = new JsonSerializerSettings
+                    {
+                        DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+                        DateFormatHandling = DateFormatHandling.IsoDateFormat
+                    };
+                    List<Commit> tempList = JsonConvert.DeserializeObject<List<Commit>>(jsonRes, settings);
+                    if (commits.Count < tempList.Count)
+                    {
+                        commits = tempList.OrderBy(commit => commit.CommitedDate).ToList();
+                    }
                 }
+                else
+                {
+                    commits = new();
+                }
+
                 Utils.Log($"Commit count {DbMirror.main.commits.Count}");
             }
             catch (HttpRequestException e)
@@ -451,8 +472,10 @@ namespace BravoCentral.Data
             }
 
             string json = JsonConvert.SerializeObject(weeks, Formatting.Indented);
+            string fullPath = Environment.ExpandEnvironmentVariables(applicationFolder) + "\\weeks.json";
+            Utils.Log($"Creating weeks.json file in [{fullPath}]");
 
-            File.WriteAllText("C:\\Users\\NICOLAS\\AppData\\Roaming\\BravoCentral\\weeks.json", json);
+            File.WriteAllText(fullPath, json);
         }
 
         static DateTime GetFirstMondayOfYear(int year)
